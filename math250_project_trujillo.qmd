@@ -1,0 +1,112 @@
+---
+title: "The Evolution of Horror Movies"
+author: "Annette Trujillo"
+format: html
+embed-resources: true
+code-fold: true
+---
+
+```{r}
+#| label: setup
+#| message: false
+#| include: false
+
+library(tidyverse)
+library(gt)
+library(lubridate)
+library(readr)
+
+horror_movies <- read_csv("horror_movies.csv")
+```
+
+
+The horror genre has undergone a radical transformation, shifting from practical effects and structural tension to a global industry driven by digital saturation and franchise expansion. While modern technology has made film making more accessible, the data suggests that this accessibility has come at a cost to how well it is received by the audience. By analyzing horror movie performance across three distinct eras like the Golden Age (1970–1989), the Post-Modern Era (1990–2009), and the Modern Era (2010–2022), a clear love for nostalgia is shown. Although the Modern Era has produced a historically huge volume of horror content, the average quality has dropped, forcing modern audiences and creators to go back to the aesthetics and tropes of the Golden Age to find narrative satisfaction.
+
+```{r}
+#| warning: false
+#| label: tbl-era-stats
+#| tbl-cap: "A Comparison of Movie Volume and Performance across three major cinematic eras."
+
+era_summary <- horror_movies %>%
+  mutate(year = year(as.Date(release_date))) %>%
+  filter(year >= 1970 & year <= 2022) %>%
+  mutate(era = case_when(
+    year <= 1989 ~ "Golden Age (70s-80s)",
+    year <= 2009 ~ "Post-Modern (90s-00s)",
+    TRUE ~ "Modern Era (2010-Present)"
+  )) %>%
+  group_by(era) %>%
+  summarise(
+    `Movies Released` = n(),
+    `Average Rating` = mean(vote_average, na.rm = TRUE),
+    `Average Popularity` = mean(popularity, na.rm = TRUE))
+
+era_summary %>%
+  gt() %>%
+  tab_header(title = "Horror Movie Performance Across Eras")
+```
+
+```{r}
+#| warning: false
+#| label: fig-rating-trend
+#| fig-cap: "Average Horror Movie Ratings by Year (1970-2022). The visual shows a steady decline in audience satisfaction as the genre expanded."
+
+horror_movies %>%
+  mutate(year = year(as.Date(release_date))) %>%
+  filter(year >= 1970 & year <= 2022) %>%
+  group_by(year) %>%
+  summarise(avg_rating = mean(vote_average, na.rm = TRUE)) %>%
+  ggplot(aes(x = year, y = avg_rating)) +
+  geom_line(color = "green", size = 1) +
+  geom_smooth(method = "loess", color = "red", se = FALSE, linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "The Decline of the 'Average' Horror Movie",
+    subtitle = "Average TMDB Rating by Year (1970-2022)",
+    x = "Year",
+    y = "Average Rating (0-10)",
+    caption = "A line graph showing that while the number of movies has increased,
+    the average audience rating has steadily declined since the 1970s."
+  )
+```
+
+As seen in Table 1, the "Modern Era" has the highest number of movies with 19,014 made, yet it suffers from the lowest average user ratings. The high popularity of "Modern Era" movies can prove the shift of the genre used for a mass-consumption commodity. As noted by the *AHSCougarCall*^[[AHSCougarCall](https://ahscougarcall.com/uncategorized/2019/10/30/what-makes-older-horror-films-better-than-modern-day-horror-films/)], older horror films often feel superior because they relied on suspense and a good plot rather than the cheap jump scares that define modern, high-volume production. The data reflects this: while the number of films has spiked since 2010, Figure 1's visualization shows a clear downward trend line, suggesting with the more horror that is produce, the less chance of satisfying the audience again.  
+
+```{r}
+#| warning: false
+#| label: fig-quality-density
+#| fig-cap: "The Distribution of Ratings Across Eras. The Golden Age (70s-80s) is more bunched at higher scores compared to the Modern Era."
+
+horror_eras <- horror_movies %>%
+  mutate(year = year(as.Date(release_date))) %>%
+  filter(year >= 1970 & year <= 2022) %>%
+  mutate(era = case_when(
+    year <= 1989 ~ "Golden Age (70s-80s)",
+    year <= 2009 ~ "Post-Modern (90s-00s)",
+    TRUE ~ "Modern Era (2010-Present)"
+  )) %>%
+  # Filter out movies with 0 or NA ratings
+  filter(vote_average > 0)
+
+
+ggplot(horror_eras, aes(x = vote_average, fill = era)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_brewer(palette = "Dark2") +
+  theme_minimal(base_size = 12) +
+  labs(title = "Audience Satisfaction Across Horror Eras",
+    subtitle = "Distribution of User Ratings (1970-2022)",
+    x = "TMDB User Rating (0-10)",
+    y = "Density",
+    fill = "Cinematic Era:",
+    caption = "A density plot showing that Golden Age horror movies have a 
+               narrower, higher-rated peak compared to the Modern Era, which has a 
+               much broader distribution leaning toward lower scores.") +
+  theme(legend.position = "bottom",
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank())
+
+```
+
+Furthermore, the shift in quality is most visible when analyzing the distribution of user ratings. Figure 2 shows the "Golden Age" vs. the "Modern Era" and reveals that 1970s and 80s horror had a much higher satisfaction rate. The ratings for these older films are tightly clustered around a higher median, whereas modern horror ratings are spread across a much broader, lower-rated spectrum. This trend in modern horror is often attributed to a loss of craftsmanship. As *The Vindi*^[[The Vindi](https://www.thevindi.com/post/they-just-don-t-make-em-like-they-used-to)] argues, modern horror frequently suffers from recycling old narratives and a reliance on CGI, whereas older films are left more to the audience's imagination, creating a more psychological experience. The data confirms that the "average" movie was statistically better during the Golden Age, even if the total number of "hits" was smaller.
+
+The data from 1970 to 2022 tells a story of a genre that has grown in size but shrunk in soul. The transition from the Golden Age to the Modern Era represents a shift from quality-over-quantity craft to a quantity-over-quality industry. As the density of lower-rated films increases, the cultural value of the 1980s aesthetic only rises. Ultimately, movie-goers want to genuinely be on their toes filled with suspense instead of being jump scared for a quick moment. To move forward, the horror genre should to stop looking at its increasing popularity scores and start looking back at the elements that made higher-rated distributions in the past.
